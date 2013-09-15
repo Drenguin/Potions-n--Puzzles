@@ -10,8 +10,9 @@
 
 #import "AppDelegate.h"
 #import "GameConfig.h"
-#import "HelloWorldLayer.h"
+#import "MainMenuLayer.h"
 #import "RootViewController.h"
+#import "GCHelper.h"
 
 @implementation AppDelegate
 
@@ -65,13 +66,16 @@
 								   pixelFormat:kEAGLColorFormatRGB565	// kEAGLColorFormatRGBA8
 								   depthFormat:0						// GL_DEPTH_COMPONENT16_OES
 						];
-	
+    
+    // allow multi-touch
+	[glView setMultipleTouchEnabled:YES]; 
+    
 	// attach the openglView to the director
 	[director setOpenGLView:glView];
 	
 //	// Enables High Res mode (Retina Display) on iPhone 4 and maintains low res on all other devices
-//	if( ! [director enableRetinaDisplay:YES] )
-//		CCLOG(@"Retina Display Not supported");
+  	if( ! [director enableRetinaDisplay:YES] )
+		CCLOG(@"Retina Display Not supported");
 	
 	//
 	// VERY IMPORTANT:
@@ -85,7 +89,7 @@
 #if GAME_AUTOROTATION == kGameAutorotationUIViewController
 	[director setDeviceOrientation:kCCDeviceOrientationPortrait];
 #else
-	[director setDeviceOrientation:kCCDeviceOrientationLandscapeLeft];
+	[director setDeviceOrientation:kCCDeviceOrientationPortrait];
 #endif
 	
 	[director setAnimationInterval:1.0/60];
@@ -109,10 +113,32 @@
 	// Removes the startup flicker
 	[self removeStartupFlicker];
 	
+    //Authenticate GC
+    [[GCHelper sharedInstance] authenticateLocalUser];
+    
 	// Run the intro Scene
-	[[CCDirector sharedDirector] runWithScene: [HelloWorldLayer scene]];
+	[[CCDirector sharedDirector] runWithScene: [MainMenuLayer scene]];
 }
 
+-(void)displayLeaderBoard:(NSString *)name
+{
+	GKLeaderboardViewController *leaderboardController = [[GKLeaderboardViewController alloc] init];
+	if (leaderboardController != NULL)
+	{
+        leaderboardController.category = name;
+		leaderboardController.timeScope = GKLeaderboardTimeScopeAllTime;
+		leaderboardController.leaderboardDelegate = self;
+		[viewController presentModalViewController: leaderboardController animated: YES];
+	}
+    
+	[leaderboardController release];
+    
+}
+
+- (void)leaderboardViewControllerDidFinish:(GKLeaderboardViewController *)leaderboardController
+{
+	[viewController dismissModalViewControllerAnimated:YES];
+}
 
 - (void)applicationWillResignActive:(UIApplication *)application {
 	[[CCDirector sharedDirector] pause];
